@@ -1,0 +1,487 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treinamentos da Brigada - Hospital Santa Marta</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2rem 1rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        header img {
+            max-height: 80px;
+            margin-bottom: 1rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .training-card {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .training-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .training-header {
+            background: #3498db;
+            color: white;
+            padding: 1.2rem;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .training-header:hover {
+            background: #2980b9;
+        }
+
+        .training-header i {
+            margin-right: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .training-header h2 {
+            font-size: 1.6rem;
+            font-weight: 500;
+            flex-grow: 1;
+        }
+
+        .training-header .toggle-btn {
+            font-size: 1.4rem;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .training-header .toggle-btn.active {
+            transform: rotate(45deg);
+        }
+
+        .training-content {
+            padding: 1.5rem;
+            display: none;
+            background: #ffffff;
+        }
+
+        .training-content.active {
+            display: block;
+        }
+
+        .training-content h3 {
+            color: #2c3e50;
+            margin-bottom: 0.6rem;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+        }
+
+        .training-content p, .training-content ul {
+            margin-bottom: 1rem;
+            line-height: 1.7;
+            font-size: 1rem;
+        }
+
+        .training-content ul {
+            list-style: disc;
+            padding-left: 1.8rem;
+        }
+
+        .training-content .example {
+            background: #f5f6f5;
+            padding: 1rem;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            font-style: italic;
+            margin-top: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            background: #2c3e50;
+            color: white;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+        }
+
+        footer a {
+            color: white;
+            margin: 0 10px;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: #3498db;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            header p {
+                font-size: 1rem;
+            }
+
+            .training-header h2 {
+                font-size: 1.3rem;
+            }
+
+            .training-header i {
+                font-size: 1.2rem;
+            }
+
+            .container {
+                padding: 0 0.5rem;
+            }
+
+            .training-content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="https://i.imgur.com/2A02Sno.png" alt="Logo Hospital Santa Marta" style="height: 80px; width: auto;">
+        <h1>Treinamentos da Brigada</h1>
+        <p>Capacitação para excelência em segurança e cuidado</p>
+    </header>
+
+    <div class="container">
+        <!-- Treinamento 1 -->
+        <div class="training-card">
+            <div class="training-header" onclick="toggleContent(this)">
+                <i class="fas fa-bullhorn"></i>
+                <h2>1. Competências Essenciais para Brigadistas</h2>
+                <button class="toggle-btn">+</button>
+            </div>
+            <div class="training-content">
+                <h3>Objetivo:</h3>
+                <p>Capacitar brigadistas a aprimorar comunicação, eficiência, colaboração, cuidado humanizado e inteligência emocional para atuar com agilidade, empatia e precisão em rotinas e emergências hospitalares.</p>
+                <h3>Duração:</h3>
+                <p>60 minutos</p>
+                <h3>Público-alvo:</h3>
+                <p>Brigada HSM</p>
+                <h3>Estrutura:</h3>
+                <ul>
+                    <li><strong>Introdução (5 min):</strong> Apresentação das cinco competências e sua importância. Exemplo: Um brigadista usa checklist, comunica claramente e acalma vítimas.</li>
+                    <li><strong>Comunicação Efetiva (10 min):</strong> Clareza, escuta ativa, linguagem corporal. Exemplo: Confirmar “Paciente na UTI, certo?” e guiar com tom calmo.</li>
+                    <li><strong>Eficiência Operacional (10 min):</strong> Planejamento, checklists, redução de erros. Exemplo: Usar checklist para chegar em 2 minutos com equipamentos prontos.</li>
+                    <li><strong>Colaboração (10 min):</strong> Parcerias com setores, resolução de conflitos. Exemplo: Sugerir guiar acompanhantes com a recepção.</li>
+                    <li><strong>Cuidado Humanizado (10 min):</strong> Empatia e comunicação sensível. Exemplo: Acalmar idosa com “Senhora, estou com você.”</li>
+                    <li><strong>Inteligência Emocional (10 min):</strong> Autocontrole e empatia. Exemplo: Respirar fundo e dizer “Você está seguro” a vítima chorando.</li>
+                    <li><strong>Conclusão (5 min):</strong> Resumo e plano para aplicar técnicas. Exemplo: Brigadista usa checklist e empatia, tornando-se líder confiável.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Treinamento 2 -->
+        <div class="training-card">
+            <div class="training-header" onclick="toggleContent(this)">
+                <i class="fas fa-users"></i>
+                <h2>2. Liderança Situacional para Brigadistas</h2>
+                <button class="toggle-btn">+</button>
+            </div>
+            <div class="training-content">
+                <h3>Objetivo:</h3>
+                <p>Capacitar brigadistas a assumir papéis de liderança em emergências, adaptando seu estilo às necessidades da equipe e do contexto.</p>
+                <h3>Conteúdo Programático:</h3>
+                <ul>
+                    <li>Conceito de liderança situacional: diretivo, colaborativo, delegador.</li>
+                    <li>Identificação de papéis em emergências.</li>
+                    <li>Tomada de decisão sob pressão.</li>
+                    <li>Feedback construtivo para fortalecer a equipe.</li>
+                    <li>Estudos de caso: liderança em evacuações ou resgates.</li>
+                </ul>
+                <h3>Exemplo Prático:</h3>
+                <p class="example">Um brigadista lidera uma evacuação, dá instruções claras a um colega inseguro e elogia o esforço após a crise.</p>
+            </div>
+        </div>
+
+        <!-- Treinamento 3 -->
+        <div class="training-card">
+            <div class="training-header" onclick="toggleContent(this)">
+                <i class="fas fa-handshake"></i>
+                <h2>3. Gestão de Conflitos no Ambiente Hospitalar</h2>
+                <button class="toggle-btn">+</button>
+            </div>
+            <div class="training-content">
+                <h3>Objetivo:</h3>
+                <p>Desenvolver habilidades para resolver conflitos entre brigadistas, outros setores ou acompanhantes, promovendo harmonia e eficiência.</p>
+                <h3>Conteúdo Programático:</h3>
+                <ul>
+                    <li>Tipos de conflitos no hospital.</li>
+                    <li>Técnicas de mediação: escuta ativa, negociação, consenso.</li>
+                    <li>Comunicação não violenta.</li>
+                    <li>Estratégias para lidar com acompanhantes agitados.</li>
+                    <li>Role-play: resolução de conflitos reais.</li>
+                </ul>
+                <h3>Exemplo Prático:</h3>
+                <p class="example">A enfermagem pede que a brigada aguarde, mas o brigadista propõe “Vamos evacuar e apoiar juntos?” e resolve o conflito.</p>
+            </div>
+        </div>
+
+        <!-- Treinamento 4 -->
+        <div class="training-card">
+            <div class="training-header" onclick="toggleContent(this)">
+                <i class="fas fa-heart"></i>
+                <h2>4. Resiliência e Bem-Estar Emocional</h2>
+                <button class="toggle-btn">+</button>
+            </div>
+            <div class="training-content">
+                <h3>Objetivo:</h3>
+                <p>Fortalecer a resiliência emocional dos brigadistas para lidar com o estresse de emergências e manter o equilíbrio.</p>
+                <h3>Conteúdo Programático:</h3>
+                <ul>
+                    <li>O que é resiliência: recuperar-se de situações difíceis.</li>
+                    <li>Identificação de sinais de estresse.</li>
+                    <li>Técnicas de autocuidado: mindfulness, pausas, apoio mútuo.</li>
+                    <li>Como apoiar colegas após eventos traumáticos.</li>
+                    <li>Exercício prático: estratégias de relaxamento.</li>
+                </ul>
+                <h3>Exemplo Prático:</h3>
+                <p class="example">Após um simulado intenso, um brigadista pratica respiração e conversa com um colega, recuperando o foco.</p>
+            </div>
+        </div>
+
+        <!-- Treinamento 5 -->
+        <div class="training-card">
+            <div class="training-header" onclick="toggleContent(this)">
+                <i class="fas fa-users-cog"></i>
+                <h2>5. Trabalho em Equipe Multidisciplinar</h2>
+                <button class="toggle-btn">+</button>
+            </div>
+            <div class="training-content">
+                <h3>Objetivo:</h3>
+                <p>Melhorar a integração da brigada com outros setores para ações coordenadas e eficazes.</p>
+                <h3>Conteúdo Programático:</h3>
+                <ul>
+                    <li>Importância da colaboração interdisciplinar.</li>
+                    <li>Papéis e responsabilidades de cada setor.</li>
+                    <li>Comunicação eficaz entre equipes.</li>
+                    <li>Planejamento conjunto antes de crises.</li>
+                    <li>Estudo de caso: evacuação com múltiplos setores.</li>
+                </ul>
+                <h3>Exemplo Prático:</h3>
+                <p class="example">A brigada coordena com enfermagem e segurança para priorizar pacientes e bloquear acessos em uma simulação.</p>
+            </div>
+        </div>
+
+        <!-- Treinamento 6 -->
+        <div class="training-card">
+            <div class="training-header" onclick="toggleContent(this)">
+                <i class="fas fa-shield-alt"></i>
+                <h2>6. Ética e Responsabilidade no Papel do Brigadista</h2>
+                <button class="toggle-btn">+</button>
+            </div>
+            <div class="training-content">
+                <h3>Objetivo:</h3>
+                <p>Reforçar a importância de agir com ética, responsabilidade e profissionalismo, alinhando-se aos valores do hospital.</p>
+                <h3>Conteúdo Programático:</h3>
+                <ul>
+                    <li>Conceito de ética: sigilo, imparcialidade.</li>
+                    <li>Responsabilidades: proteger vidas, seguir normas, reportar falhas.</li>
+                    <li>Dilemas éticos em emergências.</li>
+                    <li>Alinhamento com a missão e valores.</li>
+                    <li>Discussão: decisões éticas sob pressão.</li>
+                </ul>
+                <h3>Exemplo Prático:</h3>
+                <p class="example">Um brigadista reporta um extintor vencido ao SESMT, garantindo segurança e ética.</p>
+            </div>
+        </div>
+
+        <!-- Treinamento 7 -->
+        <div class="training-card">
+            <div class="training-header" onclick="toggleContent(this)">
+                <i class="fas fa-clock"></i>
+                <h2>7. Gestão do Tempo e Priorização</h2>
+                <button class="toggle-btn">+</button>
+            </div>
+            <div class="training-content">
+                <h3>Objetivo:</h3>
+                <p>Ensinar brigadistas a gerenciar o tempo e priorizar tarefas em rotinas e emergências.</p>
+                <h3>Conteúdo Programático:</h3>
+                <ul>
+                    <li>Conceito de gestão do tempo.</li>
+                    <li>Técnicas de priorização: matriz de urgência e importância.</li>
+                    <li>Planejamento de rondas e inspeções.</li>
+                    <li>Agir rápido sem comprometer segurança.</li>
+                    <li>Exercício: priorizar tarefas em cenário fictício.</li>
+                </ul>
+                <h3>Exemplo Prático:</h3>
+                <p class="example">Um brigadista prioriza um alarme e delega a verificação de extintor, mantendo eficiência.</p>
+            </div>
+        </div>
+
+        <!-- Treinamento 8 -->
+        <div class="training-card">
+            <div class="training-header" onclick="toggleContent(this)">
+                <i class="fas fa-sync"></i>
+                <h2>8. Gestão de Mudanças no Ambiente Hospitalar</h2>
+                <button class="toggle-btn">+</button>
+            </div>
+            <div class="training-content">
+                <h3>Objetivo:</h3>
+                <p>Preparar brigadistas para lidar com mudanças com confiança e proatividade.</p>
+                <h3>Conteúdo Programático:</h3>
+                <ul>
+                    <li>O que é gestão de mudanças.</li>
+                    <li>Impacto de mudanças na brigada.</li>
+                    <li>Adaptação a novos procedimentos.</li>
+                    <li>Comunicação com a equipe durante transições.</li>
+                    <li>Estudo de caso: novo sistema de alarmes.</li>
+                </ul>
+                <h3>Exemplo Prático:</h3>
+                <p class="example">O brigadista estuda um novo protocolo, sugere ajustes e treina a equipe.</p>
+            </div>
+        </div>
+
+        <!-- Treinamento 9 -->
+        <div class="training-card">
+            <div class="training-header" onclick="toggleContent(this)">
+                <i class="fas fa-comment"></i>
+                <h2>9. Feedback Eficaz para Melhoria Contínua</h2>
+                <button class="toggle-btn">+</button>
+            </div>
+            <div class="training-content">
+                <h3>Objetivo:</h3>
+                <p>Desenvolver a habilidade de dar e receber feedback construtivo.</p>
+                <h3>Conteúdo Programático:</h3>
+                <ul>
+                    <li>Diferença entre feedback e crítica.</li>
+                    <li>Estrutura: elogio, sugestão, apoio.</li>
+                    <li>Receber feedback sem levar para o lado pessoal.</li>
+                    <li>Aplicação em simulados e rotinas.</li>
+                    <li>Role-play: prática de feedback.</li>
+                </ul>
+                <h3>Exemplo Prático:</h3>
+                <p class="example">Um brigadista sugere ao colega melhorar a comunicação com enfermagem após um simulado.</p>
+            </div>
+        </div>
+
+        <!-- Treinamento 10 -->
+        <div class="training-card">
+            <div class="training-header" onclick="toggleContent(this)">
+                <i class="fas fa-eye"></i>
+                <h2>10. Promoção de uma Cultura de Transparência</h2>
+                <button class="toggle-btn">+</button>
+            </div>
+            <div class="training-content">
+                <h3>Objetivo:</h3>
+                <p>Ensinar brigadistas a cultivar transparência, compartilhando informações e admitindo erros.</p>
+                <h3>Conteúdo Programático:</h3>
+                <ul>
+                    <li>O que é transparência.</li>
+                    <li>Benefícios: aprendizado e confiança.</li>
+                    <li>Reportar problemas sem medo.</li>
+                    <li>Técnicas para críticas respeitosas.</li>
+                    <li>Exercício: relato transparente de erro fictício.</li>
+                </ul>
+                <h3>Exemplo Prático:</h3>
+                <p class="example">Um brigadista relata um extintor não verificado, levando a um treinamento extra.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025 Hospital Santa Marta - Recursos Humanos</p>
+        <div>
+            <a href="https://www.instagram.com/hospitalsantamartadf/" target="_blank"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.linkedin.com/company/hospital-santa-marta" target="_blank"><i class="fab fa-linkedin"></i></a>
+        </div>
+    </footer>
+
+    <script>
+        function toggleContent(header) {
+            const content = header.nextElementSibling;
+            const button = header.querySelector('.toggle-btn');
+            content.classList.toggle('active');
+            button.classList.toggle('active');
+            button.textContent = content.classList.contains('active') ? '−' : '+';
+        }
+    </script>
+</body>
+</html>
